@@ -25,7 +25,7 @@ async def seed_demo_data(container: AppContainer) -> None:
             criticality=5,
         )
     )
-    billing = await container.asset_service.create_asset(
+    await container.asset_service.create_asset(
         AssetCreate(
             name="Billing API",
             vendor="Acme",

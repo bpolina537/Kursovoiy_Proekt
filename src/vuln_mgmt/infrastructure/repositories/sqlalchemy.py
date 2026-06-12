@@ -195,6 +195,13 @@ class SqlAlchemyRemediationRepository:
             row = await session.get(RemediationORM, remediation_id)
             return _remediation_to_entity(row) if row is not None else None
 
+    async def list_all(self) -> Sequence[Remediation]:
+        async with self._session_factory() as session:
+            result = await session.execute(
+                select(RemediationORM).order_by(RemediationORM.updated_at.desc())
+            )
+            return [_remediation_to_entity(row) for row in result.scalars().all()]
+
 
 class SqlAlchemyHealthProbe:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:

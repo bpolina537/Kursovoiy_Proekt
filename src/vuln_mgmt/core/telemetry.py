@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
-from io import StringIO
 from typing import Any
 
 
@@ -24,27 +23,10 @@ class TelemetryHandle:
 
 
 def configure_telemetry(service_name: str) -> TelemetryHandle:
-    try:
-        from opentelemetry import trace
-        from opentelemetry.sdk.resources import Resource
-        from opentelemetry.sdk.trace import TracerProvider
-        from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
-    except ImportError:
-        return TelemetryHandle()
-
-    resource = Resource.create({"service.name": service_name})
-    provider = TracerProvider(resource=resource)
-    provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter(out=StringIO())))
-    trace.set_tracer_provider(provider)
-    return TelemetryHandle(
-        tracer=trace.get_tracer(service_name),
-        shutdown_handler=provider.shutdown,
-    )
+    _ = service_name
+    return TelemetryHandle()
 
 
 def instrument_fastapi(app: Any) -> None:
-    try:
-        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-    except ImportError:
-        return
-    FastAPIInstrumentor.instrument_app(app)
+    _ = app
+    return

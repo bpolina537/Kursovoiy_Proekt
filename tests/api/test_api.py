@@ -18,6 +18,14 @@ async def test_health_and_readiness(api_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_dashboard_is_available(api_client: AsyncClient) -> None:
+    response = await api_client.get("/")
+
+    assert response.status_code == 200
+    assert "Платформа управления уязвимостями" in response.text
+
+
+@pytest.mark.asyncio
 async def test_create_asset_validation_error(api_client: AsyncClient) -> None:
     response = await api_client.post("/assets", json={"name": "x"})
 
@@ -76,6 +84,14 @@ async def test_create_vulnerability_and_assessment_flow(api_client: AsyncClient)
     assert report_response.status_code == 200
     assert report["risk_level"] == "critical"
     assert report["findings"][0]["remediation_status"] == "open"
+
+
+@pytest.mark.asyncio
+async def test_remediations_list_is_available(api_client: AsyncClient) -> None:
+    response = await api_client.get("/remediations")
+
+    assert response.status_code == 200
+    assert response.json() == []
 
 
 @pytest.mark.asyncio

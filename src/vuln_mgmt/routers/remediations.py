@@ -36,3 +36,11 @@ async def update_remediation(
     if remediation is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Remediation not found")
     return RemediationRead.model_validate(remediation)
+
+
+@router.get("", response_model=list[RemediationRead])
+async def list_remediations(
+    service: RemediationService = Depends(get_remediation_service),
+) -> list[RemediationRead]:
+    remediations = await service.list_remediations()
+    return [RemediationRead.model_validate(item) for item in remediations]

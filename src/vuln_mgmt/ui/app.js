@@ -240,6 +240,22 @@ function renderAllDerived() {
   }
 }
 
+function wireUi() {
+  wireForm('#assetForm', handleAssetSubmit);
+  wireForm('#vulnForm', handleVulnSubmit);
+  wireForm('#remediationForm', handleRemediationSubmit);
+  wireForm('#assessmentForm', handleAssessmentSubmit);
+  qs('#remediationAssetSelect').addEventListener('change', handleRemediationAssetChange);
+  qs('#fillAssetDemo').addEventListener('click', fillAssetDemo);
+  qs('#fillVulnDemo').addEventListener('click', fillVulnerabilityDemo);
+  qs('#findingRiskFilter').addEventListener('change', renderFindings);
+  qs('#findingStatusFilter').addEventListener('change', renderFindings);
+  qs('#cveSearch').addEventListener('input', renderCveTable);
+  qsa('.tab[data-view]').forEach((button) => {
+    button.addEventListener('click', () => switchView(button.dataset.view));
+  });
+}
+
 async function refreshAssets() {
   const items = await fetchJson('/assets');
   cachedAssets = items;
@@ -421,22 +437,14 @@ function wireForm(selector, handler) {
 }
 
 async function main() {
-  await Promise.all([refreshAssets(), refreshVulnerabilities(), refreshRemediations()]);
-  renderAllDerived();
+  wireUi();
 
-  wireForm('#assetForm', handleAssetSubmit);
-  wireForm('#vulnForm', handleVulnSubmit);
-  wireForm('#remediationForm', handleRemediationSubmit);
-  wireForm('#assessmentForm', handleAssessmentSubmit);
-  qs('#remediationAssetSelect').addEventListener('change', handleRemediationAssetChange);
-  qs('#fillAssetDemo').addEventListener('click', fillAssetDemo);
-  qs('#fillVulnDemo').addEventListener('click', fillVulnerabilityDemo);
-  qs('#findingRiskFilter').addEventListener('change', renderFindings);
-  qs('#findingStatusFilter').addEventListener('change', renderFindings);
-  qs('#cveSearch').addEventListener('input', renderCveTable);
-  qsa('.tab[data-view]').forEach((button) => {
-    button.addEventListener('click', () => switchView(button.dataset.view));
-  });
+  await Promise.allSettled([
+    refreshAssets(),
+    refreshVulnerabilities(),
+    refreshRemediations(),
+  ]);
+  renderAllDerived();
 }
 
 main().catch((error) => {

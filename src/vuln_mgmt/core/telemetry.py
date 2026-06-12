@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
+from io import StringIO
 from typing import Any
 
 
@@ -33,7 +34,7 @@ def configure_telemetry(service_name: str) -> TelemetryHandle:
 
     resource = Resource.create({"service.name": service_name})
     provider = TracerProvider(resource=resource)
-    provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+    provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter(out=StringIO())))
     trace.set_tracer_provider(provider)
     return TelemetryHandle(
         tracer=trace.get_tracer(service_name),

@@ -3,27 +3,120 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Платформа управления уязвимостями</title>
+  <title>VulnMgmt</title>
   <link rel="stylesheet" href="/ui/styles.css">
 </head>
 <body>
-  <main class="shell">
-    <header class="hero">
-      <div>
-        <p class="eyebrow">Vulnerability Management</p>
-        <h1>Платформа управления уязвимостями</h1>
-        <p class="lede">Инвентарь активов, уязвимости, статус исправления и риск-приоритизация в одном интерфейсе.</p>
-        <p class="hint">Демо-данные загружаются автоматически при старте. Можно сразу выбрать актив в блоке оценки риска или добавить свои записи через формы ниже.</p>
-      </div>
-      <div class="status-card">
-        <div><span class="label">API</span><span id="healthStatus">проверка...</span></div>
-        <div><span class="label">Ready</span><span id="readyStatus">проверка...</span></div>
-      </div>
-    </header>
+  <header class="topbar">
+    <div>
+      <h1>VulnMgmt</h1>
+      <p>Платформа управления уязвимостями - вариант 4</p>
+    </div>
+    <nav class="tabs" aria-label="Разделы приложения">
+      <button class="tab active" type="button" data-view="dashboard">Дашборд</button>
+      <button class="tab" type="button" data-view="findings">Находки</button>
+      <button class="tab" type="button" data-view="inventory">Инвентарь</button>
+      <button class="tab" type="button" data-view="cve">CVE</button>
+      <button class="tab" type="button" data-view="remediations">Исправления</button>
+      <a class="tab link-tab" href="/docs" target="_blank" rel="noreferrer">Swagger</a>
+    </nav>
+  </header>
 
-    <section class="grid">
+  <main class="shell">
+    <section class="view active" id="view-dashboard">
+      <div class="metrics">
+        <article class="metric">
+          <span id="metricCvss">0</span>
+          <p>Max CVSS</p>
+        </article>
+        <article class="metric">
+          <span id="metricAssets">0</span>
+          <p>Активов</p>
+        </article>
+        <article class="metric">
+          <span id="metricFindings">0</span>
+          <p>Находок</p>
+        </article>
+        <article class="metric">
+          <span id="metricCritical">0</span>
+          <p>Critical CVE</p>
+        </article>
+        <article class="metric">
+          <span id="metricRemediations">0</span>
+          <p>Исправлений</p>
+        </article>
+        <article class="metric">
+          <span id="metricProgress">0</span>
+          <p>В работе</p>
+        </article>
+      </div>
+
+      <article class="panel recommendations">
+        <h2>Рекомендации</h2>
+        <ul id="recommendationsList">
+          <li>Данные загружаются...</li>
+        </ul>
+      </article>
+
       <article class="panel">
-        <h2>Активы</h2>
+        <h2>Оценка риска актива</h2>
+        <p class="hint">Выбери актив, чтобы увидеть общий риск и связанные уязвимости.</p>
+        <form id="assessmentForm" class="form inline-form">
+          <select name="asset_id" id="assessmentAssetSelect" required></select>
+          <button type="submit">Показать риск</button>
+        </form>
+        <div id="assessmentResult" class="assessment"></div>
+      </article>
+    </section>
+
+    <section class="view" id="view-findings">
+      <article class="panel">
+        <div class="section-head">
+          <div>
+            <h2>Список находок</h2>
+            <p class="hint">Находка появляется, когда актив совпадает с CVE по вендору, продукту и версии.</p>
+          </div>
+          <div class="filters">
+            <select id="findingRiskFilter">
+              <option value="all">Все риски</option>
+              <option value="critical">critical</option>
+              <option value="high">high</option>
+              <option value="medium">medium</option>
+              <option value="low">low</option>
+            </select>
+            <select id="findingStatusFilter">
+              <option value="all">Все статусы</option>
+              <option value="not_started">not started</option>
+              <option value="open">open</option>
+              <option value="in_progress">in_progress</option>
+              <option value="mitigated">mitigated</option>
+              <option value="accepted">accepted</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>CVE</th>
+                <th>Актив</th>
+                <th>CVSS</th>
+                <th>Риск</th>
+                <th>Приоритет</th>
+                <th>Статус</th>
+                <th>SLA</th>
+              </tr>
+            </thead>
+            <tbody id="findingsTable"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section class="view" id="view-inventory">
+      <article class="panel">
+        <h2>Инвентарь активов</h2>
         <form id="assetForm" class="form">
           <input name="name" list="assetNames" placeholder="Название" required>
           <input name="vendor" list="vendors" placeholder="Вендор" required>
@@ -41,9 +134,35 @@
         </form>
         <div id="assetsList" class="list"></div>
       </article>
+    </section>
+
+    <section class="view" id="view-cve">
+      <article class="panel">
+        <div class="section-head">
+          <div>
+            <h2>Список CVE</h2>
+            <p class="hint">Здесь отображается локальная база уязвимостей проекта.</p>
+          </div>
+          <input id="cveSearch" class="search" placeholder="Поиск CVE или описания">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>CVE</th>
+                <th>CVSS</th>
+                <th>Severity</th>
+                <th>Продукт</th>
+                <th>Описание</th>
+              </tr>
+            </thead>
+            <tbody id="cveTable"></tbody>
+          </table>
+        </div>
+      </article>
 
       <article class="panel">
-        <h2>Уязвимости</h2>
+        <h2>Добавить CVE</h2>
         <form id="vulnForm" class="form">
           <input name="cve_id" list="cveIds" placeholder="CVE-2024-11111" required>
           <input name="title" list="vulnerabilityTitles" placeholder="Название" required>
@@ -65,9 +184,12 @@
         </form>
         <div id="vulnerabilitiesList" class="list"></div>
       </article>
+    </section>
 
+    <section class="view" id="view-remediations">
       <article class="panel">
         <h2>Исправления</h2>
+        <p class="hint">Сначала выбери актив, затем список CVE отфильтруется под этот актив.</p>
         <form id="remediationForm" class="form">
           <select name="asset_id" id="remediationAssetSelect" required></select>
           <select name="vulnerability_id" id="remediationVulnerabilitySelect" required></select>
@@ -81,15 +203,6 @@
           <button type="submit">Создать исправление</button>
         </form>
         <div id="remediationsList" class="list"></div>
-      </article>
-
-      <article class="panel panel-wide">
-        <h2>Оценка риска актива</h2>
-        <form id="assessmentForm" class="form inline-form">
-          <select name="asset_id" id="assessmentAssetSelect" required></select>
-          <button type="submit">Показать риск</button>
-        </form>
-        <div id="assessmentResult" class="assessment"></div>
       </article>
     </section>
 
@@ -107,22 +220,27 @@
       <option value="crm"></option>
       <option value="billing-api"></option>
       <option value="legacy-module"></option>
+      <option value="hr-portal"></option>
     </datalist>
     <datalist id="versions">
       <option value="1.0.0"></option>
       <option value="1.1.0"></option>
       <option value="2.4.1"></option>
       <option value="2.5.0"></option>
+      <option value="3.0.0"></option>
+      <option value="3.1.0"></option>
     </datalist>
     <datalist id="cveIds">
       <option value="CVE-2024-11111"></option>
       <option value="CVE-2024-22222"></option>
       <option value="CVE-2024-33333"></option>
+      <option value="CVE-2024-44444"></option>
     </datalist>
     <datalist id="vulnerabilityTitles">
       <option value="Remote code execution in CRM component"></option>
       <option value="Authentication bypass in Billing API"></option>
       <option value="Information disclosure in legacy module"></option>
+      <option value="Privilege escalation in HR Portal"></option>
     </datalist>
     <datalist id="remediationNotes">
       <option value="Патч запланирован к установке"></option>

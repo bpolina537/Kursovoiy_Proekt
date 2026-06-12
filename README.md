@@ -101,10 +101,12 @@ py -3 -m bandit -r src
 │       ├── infrastructure/    # SQLAlchemy, репозитории, NVD-клиент
 │       ├── routers/           # FastAPI endpoints
 │       ├── schemas/           # Pydantic-схемы
-│       └── services/          # бизнес-логика
+│       ├── services/          # бизнес-логика
+│       └── ui/                # веб-интерфейс дашборда
 ├── tests/
 │   ├── api/
 │   └── unit/
+├── docs/
 ├── docker-compose.yml
 ├── Dockerfile
 ├── pyproject.toml

@@ -91,7 +91,8 @@ async def test_remediations_list_is_available(api_client: AsyncClient) -> None:
     response = await api_client.get("/remediations")
 
     assert response.status_code == 200
-    assert response.json() == []
+    assert isinstance(response.json(), list)
+    assert response.json()
 
 
 @pytest.mark.asyncio

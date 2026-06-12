@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI
@@ -20,7 +21,7 @@ from vuln_mgmt.routers.dashboard import router as dashboard_router
 from vuln_mgmt.routers.health import router as health_router
 from vuln_mgmt.routers.remediations import router as remediations_router
 from vuln_mgmt.routers.vulnerabilities import router as vulnerabilities_router
-from pathlib import Path
+from vuln_mgmt.services.demo import seed_demo_data
 
 UI_DIR = Path(__file__).resolve().parent / "ui"
 
@@ -51,6 +52,7 @@ def create_app(settings: Any | None = None, container: AppContainer | None = Non
         else:
             app.state.container = container
         await app.state.container.startup()
+        await seed_demo_data(app.state.container)
         try:
             yield
         finally:

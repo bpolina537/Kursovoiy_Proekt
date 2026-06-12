@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vuln_mgmt
+      POSTGRES_USER: vuln
+      POSTGRES_PASSWORD: vuln
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vuln -d vuln_mgmt"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - vuln_mgmt_net
+
+  app:
+    build: .
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://vuln:vuln@db:5432/vuln_mgmt
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health').read()\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - vuln_mgmt_net
+
+volumes:
+  postgres_data:
+
+networks:
+  vuln_mgmt_net:
+

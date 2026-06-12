@@ -1,42 +1,43 @@
 # Платформа управления уязвимостями
 
-**Автор:** Тарасов Вадим Романович  
-**Группа:** 221131  
+**Автор:** Бондаренко Полина  
+**Группа:** 221331  
 **Вариант:** 4 — Платформа управления уязвимостями (Vulnerability Management)
 
 Курсовой проект по дисциплине «Методы и технологии программирования».
 
-**Репозиторий:** https://github.com/vadeetar/Kursach
+**Репозиторий:** https://github.com/bpolina537/Kursovoiy_Proekt
 
-Система сбора данных об уязвимостях (CVE, NVD), сопоставления с инвентаризацией ПО организации, приоритизации по CVSS/EPSS и веб-интерфейса для отслеживания статуса исправления.
+Система сбора данных об уязвимостях (CVE, NVD), сопоставления с инвентаризацией ПО организации, приоритизации по CVSS и контексту актива. API позволяет вести инвентарь, добавлять уязвимости, импортировать данные из NVD и отслеживать статус исправления.
 
 ## Стек
 
 | Компонент | Технология |
 |-----------|------------|
 | Backend | Python 3.12, FastAPI, SQLAlchemy, Pydantic V2 |
-| БД | PostgreSQL 15 (SQLite — локально без Docker) |
-| Источники | [NVD API 2.0](https://nvd.nist.gov/developers/vulnerabilities), [EPSS API](https://www.first.org/epss/api) |
+| БД | PostgreSQL |
+| Источники | [NVD API 2.0](https://nvd.nist.gov/developers/vulnerabilities) |
 | Контейнеры | Docker, Docker Compose |
-| Качество | pytest, Bandit (SAST), pip-audit (SCA), GitHub Actions |
+| Качество | pytest, ruff, black, Bandit, GitHub Actions |
 
 ## Быстрый старт (Windows, без Docker)
 
 Из корня проекта в PowerShell:
 
 ```powershell
-cd E:\курсач
-.\start.ps1
+py -3 -m venv .venv
+.\.venv\Scripts\activate
+py -3 -m pip install -e .[dev]
+$env:DATABASE_URL = "memory://local"
+py -3 -m uvicorn vuln_mgmt.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-Не закрывайте окно терминала. Откройте:
+Откройте:
 
-- **Веб-интерфейс:** http://127.0.0.1:8000
-- **Swagger API:** http://127.0.0.1:8000/api/v1/docs
+- **Swagger API:** http://127.0.0.1:8000/docs
+- **Healthcheck:** http://127.0.0.1:8000/health
 
-> `ERR_CONNECTION_REFUSED` — сервер не запущен. Сначала выполните `.\start.ps1`.
-
-При первом запуске создаётся `backend\vuln_mgmt.db` и загружаются **демо-данные** (3 CVE, 3 пакета, находки).
+> `ERR_CONNECTION_REFUSED` — сервер не запущен. Сначала выполните команду запуска.
 
 ## Быстрый старт (Docker)
 
@@ -47,74 +48,78 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Откройте http://localhost:8000
-
-## Локальный запуск вручную
-
-```powershell
-cd backend
-py -3 -m pip install -r requirements.txt
-$env:PYTHONPATH = "."
-py -3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-База SQLite создаётся автоматически в `backend\vuln_mgmt.db` (путь не зависит от текущей папки).
+Откройте http://localhost:8000/docs
 
 ## Основные возможности
 
-1. **Сбор CVE** — `POST /api/v1/tasks/sync-nvd` (NVD API)
-2. **EPSS** — `POST /api/v1/tasks/update-epss`
-3. **Инвентарь ПО** — `POST /api/v1/assets`
-4. **Сопоставление** — `POST /api/v1/tasks/match-assets`
-5. **Управление исправлением** — `PATCH /api/v1/findings/{id}`
-6. **Отчёты** — `GET /api/v1/reports/executive-summary`
+1. **Инвентарь ПО** — `POST /assets`
+2. **Реестр уязвимостей** — `POST /vulnerabilities`
+3. **Импорт CVE из NVD** — `POST /vulnerabilities/import`
+4. **Оценка риска актива** — `GET /assets/{asset_id}/assessment`
+5. **Управление исправлением** — `POST /remediations`, `PATCH /remediations/{id}`
+6. **Проверка состояния сервиса** — `GET /health`, `GET /ready`
+
+## Примеры запросов
+
+Создание актива:
+
+```powershell
+curl -X POST http://127.0.0.1:8000/assets `
+  -H "Content-Type: application/json" `
+  -d "{\"name\":\"CRM\",\"vendor\":\"Acme\",\"product\":\"crm\",\"version\":\"1.0.0\",\"environment\":\"production\",\"owner\":\"IT\",\"criticality\":5}"
+```
+
+Создание уязвимости:
+
+```powershell
+curl -X POST http://127.0.0.1:8000/vulnerabilities `
+  -H "Content-Type: application/json" `
+  -d "{\"cve_id\":\"CVE-2024-11111\",\"title\":\"Remote code execution\",\"description\":\"RCE in CRM component\",\"cvss_score\":9.8,\"severity\":\"critical\",\"affected_vendor\":\"Acme\",\"affected_product\":\"crm\",\"fixed_version\":\"1.1.0\",\"published_at\":\"2024-01-10T10:00:00+00:00\",\"exploit_available\":true}"
+```
+
+Получение оценки риска:
+
+```powershell
+curl http://127.0.0.1:8000/assets/<asset_id>/assessment
+```
 
 ## Тесты и безопасность
 
 ```powershell
-cd backend
-py -3 -m pip install -r requirements.txt
-$env:DISABLE_SEED = "1"
-$env:TESTING = "1"
-py -3 -m pytest --cov=app --cov-report=term-missing -v
-py -3 -m ruff check app tests
-py -3 -m bandit -r app -ll
+py -3 -m pytest --cov=src --cov-report=term-missing -v
+py -3 -m ruff check src tests
+py -3 -m bandit -r src
 ```
 
 ## Структура проекта
 
-```
-├── start.ps1              # запуск на Windows
-├── backend/
-│   ├── app/               # FastAPI, NVD/EPSS, веб-UI
-│   └── tests/             # pytest
-├── docs/                  # архитектура, демо, презентация
+```text
+├── src/
+│   └── vuln_mgmt/
+│       ├── core/              # конфигурация, DI, БД, logging, telemetry
+│       ├── domain/            # сущности, ошибки, расчёт риска
+│       ├── infrastructure/    # SQLAlchemy, репозитории, NVD-клиент
+│       ├── routers/           # FastAPI endpoints
+│       ├── schemas/           # Pydantic-схемы
+│       └── services/          # бизнес-логика
+├── tests/
+│   ├── api/
+│   └── unit/
 ├── docker-compose.yml
-├── POYASNITELNA_ZAPISKA.md
-└── .github/workflows/ci.yml
+├── Dockerfile
+├── pyproject.toml
+└── README.md
 ```
 
 ## Git Flow
 
-- `main` — стабильная версия (релиз для защиты)
-- `develop` — интеграция
-- Коммиты: `feat:`, `fix:`, `docs:`, `test:`
-
-## Документация
-
-| Документ | Назначение |
-|----------|------------|
-| [Пояснительная записка](POYASNITELNA_ZAPISKA.md) | Текст курсовой |
-| [Архитектура](docs/ARCHITECTURE.md) | Диаграммы |
-| [Презентация](docs/PREZENTACIYA.md) | Слайды к защите |
-| [Сценарий демо](docs/DEMO_ZASHCHITA.md) | Демонстрация |
-| [Скриншоты](SCREENSHOTS_GUIDE.md) | Приложения к записке |
-| [Задание](ZADANIE_KURSOVOJ.md) | Вариант 4 |
+- `main` — стабильная версия для защиты
+- Коммиты: `feat:`, `fix:`, `docs:`, `test:`, `chore:`
 
 ## Переменные окружения
 
-См. [.env.example](.env.example). Опционально: `NVD_API_KEY` для увеличенных лимитов NVD API.
+См. [.env.example](.env.example). Опционально можно указать `NVD_API_KEY` для увеличенных лимитов NVD API.
 
 ## AI-ассистированная разработка
 
-Проект разработан с использованием AI-ассистента (Cursor) в соответствии с методическими указаниями 2026 г.
+Проект разработан с использованием AI-ассистента в соответствии с методическими указаниями 2026 г.

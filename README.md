@@ -1,109 +1,125 @@
-# Курсовой проект: Платформа управления уязвимостями
+# Платформа управления уязвимостями
 
-**Студент:** Бондаренко Полина  
+**Автор:** Бондаренко Полина  
 **Группа:** 221331  
-**Лабораторная работа:** 14  
-**Вариант:** 4  
-**Тип варианта:** повышенная сложность
+**Вариант:** 4 — Платформа управления уязвимостями (Vulnerability Management)
 
-## Описание
-Платформа управления уязвимостями собирает сведения о CVE, хранит инвентаризацию ПО организации и помогает приоритизировать исправления на основе CVSS, критичности актива и среды эксплуатации.
+Курсовой проект по дисциплине «Методы и технологии программирования».
 
-## Технологии
-- Python 3.11+
-- FastAPI
-- Pydantic
-- SQLAlchemy 2
-- PostgreSQL
-- NVD API
-- Docker и Docker Compose
-- pytest
-- ruff, black, bandit
+**Репозиторий:** https://github.com/bpolina537/Kursovoiy_Proekt
 
-## Архитектура
-Проект использует layered architecture:
+Система сбора данных об уязвимостях (CVE, NVD), сопоставления с инвентаризацией ПО организации, приоритизации по CVSS и контексту актива. API позволяет вести инвентарь, добавлять уязвимости, импортировать данные из NVD и отслеживать статус исправления.
 
-- `src/vuln_mgmt/core` - конфигурация, DI, логирование, БД, telemetry
-- `src/vuln_mgmt/domain` - доменные сущности, ошибки и расчёт риска
-- `src/vuln_mgmt/infrastructure` - SQLAlchemy-модели, репозитории и NVD-клиент
-- `src/vuln_mgmt/services` - бизнес-логика
-- `src/vuln_mgmt/routers` - HTTP API
-- `src/vuln_mgmt/schemas` - Pydantic-схемы
-- `tests` - unit и API-тесты
+## Стек
 
-## Сборка
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -e .[dev]
+| Компонент | Технология |
+|-----------|------------|
+| Backend | Python 3.12, FastAPI, SQLAlchemy, Pydantic V2 |
+| БД | PostgreSQL |
+| Источники | [NVD API 2.0](https://nvd.nist.gov/developers/vulnerabilities) |
+| Контейнеры | Docker, Docker Compose |
+| Качество | pytest, ruff, black, Bandit, GitHub Actions |
+
+## Быстрый старт (Windows, без Docker)
+
+Из корня проекта в PowerShell:
+
+```powershell
+py -3 -m venv .venv
+.\.venv\Scripts\activate
+py -3 -m pip install -e .[dev]
+$env:DATABASE_URL = "memory://local"
+py -3 -m uvicorn vuln_mgmt.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-Или через Docker:
+Откройте:
 
-```bash
-copy .env.example .env
-docker compose build
-```
+- **Swagger API:** http://127.0.0.1:8000/docs
+- **Healthcheck:** http://127.0.0.1:8000/health
 
-## Запуск
-Локально:
+> `ERR_CONNECTION_REFUSED` — сервер не запущен. Сначала выполните команду запуска.
+
+## Быстрый старт (Docker)
+
+Нужен [Docker Desktop](https://www.docker.com/products/docker-desktop/).
 
 ```bash
-uvicorn vuln_mgmt.main:app --reload
+cp .env.example .env
+docker compose up -d --build
 ```
 
-Через Docker:
+Откройте http://localhost:8000/docs
 
-```bash
-docker compose up
-```
+## Основные возможности
 
-Swagger-документация будет доступна по адресу:
-
-```text
-http://127.0.0.1:8000/docs
-```
+1. **Инвентарь ПО** — `POST /assets`
+2. **Реестр уязвимостей** — `POST /vulnerabilities`
+3. **Импорт CVE из NVD** — `POST /vulnerabilities/import`
+4. **Оценка риска актива** — `GET /assets/{asset_id}/assessment`
+5. **Управление исправлением** — `POST /remediations`, `PATCH /remediations/{id}`
+6. **Проверка состояния сервиса** — `GET /health`, `GET /ready`
 
 ## Примеры запросов
+
 Создание актива:
 
-```bash
-curl -X POST http://127.0.0.1:8000/assets ^
-  -H "Content-Type: application/json" ^
+```powershell
+curl -X POST http://127.0.0.1:8000/assets `
+  -H "Content-Type: application/json" `
   -d "{\"name\":\"CRM\",\"vendor\":\"Acme\",\"product\":\"crm\",\"version\":\"1.0.0\",\"environment\":\"production\",\"owner\":\"IT\",\"criticality\":5}"
 ```
 
 Создание уязвимости:
 
-```bash
-curl -X POST http://127.0.0.1:8000/vulnerabilities ^
-  -H "Content-Type: application/json" ^
+```powershell
+curl -X POST http://127.0.0.1:8000/vulnerabilities `
+  -H "Content-Type: application/json" `
   -d "{\"cve_id\":\"CVE-2024-11111\",\"title\":\"Remote code execution\",\"description\":\"RCE in CRM component\",\"cvss_score\":9.8,\"severity\":\"critical\",\"affected_vendor\":\"Acme\",\"affected_product\":\"crm\",\"fixed_version\":\"1.1.0\",\"published_at\":\"2024-01-10T10:00:00+00:00\",\"exploit_available\":true}"
 ```
 
 Получение оценки риска:
 
-```bash
+```powershell
 curl http://127.0.0.1:8000/assets/<asset_id>/assessment
 ```
 
-## API
-- `GET /health`
-- `GET /ready`
-- `POST /assets`
-- `GET /assets`
-- `GET /assets/{asset_id}`
-- `GET /assets/{asset_id}/assessment`
-- `POST /vulnerabilities`
-- `POST /vulnerabilities/import`
-- `GET /vulnerabilities`
-- `POST /remediations`
-- `PATCH /remediations/{remediation_id}`
+## Тесты и безопасность
 
-## Проверка качества
-```bash
-pytest
-ruff check src tests
-bandit -r src
+```powershell
+py -3 -m pytest --cov=src --cov-report=term-missing -v
+py -3 -m ruff check src tests
+py -3 -m bandit -r src
 ```
 
+## Структура проекта
+
+```text
+├── src/
+│   └── vuln_mgmt/
+│       ├── core/              # конфигурация, DI, БД, logging, telemetry
+│       ├── domain/            # сущности, ошибки, расчёт риска
+│       ├── infrastructure/    # SQLAlchemy, репозитории, NVD-клиент
+│       ├── routers/           # FastAPI endpoints
+│       ├── schemas/           # Pydantic-схемы
+│       └── services/          # бизнес-логика
+├── tests/
+│   ├── api/
+│   └── unit/
+├── docker-compose.yml
+├── Dockerfile
+├── pyproject.toml
+└── README.md
+```
+
+## Git Flow
+
+- `main` — стабильная версия для защиты
+- Коммиты: `feat:`, `fix:`, `docs:`, `test:`, `chore:`
+
+## Переменные окружения
+
+См. [.env.example](.env.example). Опционально можно указать `NVD_API_KEY` для увеличенных лимитов NVD API.
+
+## AI-ассистированная разработка
+
+Проект разработан с использованием AI-ассистента в соответствии с методическими указаниями 2026 г.

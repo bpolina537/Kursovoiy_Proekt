@@ -56,3 +56,6 @@ class RemediationService:
 
     async def get_by_id(self, remediation_id: str) -> Remediation | None:
         return await self._repository.get_by_id(remediation_id)
+
+    async def list_remediations(self) -> list[Remediation]:
+        return list(await self._repository.list_all())

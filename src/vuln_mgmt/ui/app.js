@@ -1,4 +1,6 @@
 const API_BASE = '';
+let cachedAssets = [];
+let cachedVulnerabilities = [];
 
 const qs = (selector) => document.querySelector(selector);
 
@@ -26,6 +28,21 @@ function renderList(container, items, labelFn) {
     : '<div class="item"><span class="muted">Пока пусто</span></div>';
 }
 
+function setOptions(select, items, labelFn) {
+  select.innerHTML = items.length
+    ? items.map((item) => `<option value="${item.id}">${labelFn(item)}</option>`).join('')
+    : '<option value="">Нет данных</option>';
+}
+
+function setFormValues(form, values) {
+  Object.entries(values).forEach(([name, nextValue]) => {
+    const field = form.elements.namedItem(name);
+    if (!field) return;
+    if (field.type === 'checkbox') field.checked = Boolean(nextValue);
+    else field.value = nextValue;
+  });
+}
+
 function riskClass(level) {
   if (level === 'critical' || level === 'high') return 'bad';
   if (level === 'medium') return 'warn';
@@ -43,22 +60,28 @@ async function refreshHealth() {
 
 async function refreshAssets() {
   const items = await fetchJson('/assets');
+  cachedAssets = items;
   renderList(qs('#assetsList'), items, (item) => `
     <div class="item">
       <strong>${item.name}</strong>
       <div class="muted">${item.vendor} / ${item.product} / ${item.version}</div>
+      <div class="muted">${item.environment}, criticality ${item.criticality}</div>
       <div class="muted">ID: ${item.id}</div>
     </div>`);
+  setOptions(qs('#remediationAssetSelect'), items, (item) => `${item.name} (${item.product})`);
+  setOptions(qs('#assessmentAssetSelect'), items, (item) => `${item.name} (${item.product})`);
 }
 
 async function refreshVulnerabilities() {
   const items = await fetchJson('/vulnerabilities');
+  cachedVulnerabilities = items;
   renderList(qs('#vulnerabilitiesList'), items, (item) => `
     <div class="item">
       <strong>${item.cve_id} - ${item.title}</strong>
       <div class="muted">${item.affected_vendor} / ${item.affected_product}</div>
       <div class="muted">CVSS: ${item.cvss_score} | ${item.severity} | ID: ${item.id}</div>
     </div>`);
+  setOptions(qs('#remediationVulnerabilitySelect'), items, (item) => `${item.cve_id} (${item.severity})`);
 }
 
 async function refreshRemediations() {
@@ -90,6 +113,18 @@ async function handleAssetSubmit(event) {
   await refreshAssets();
 }
 
+function fillAssetDemo() {
+  setFormValues(qs('#assetForm'), {
+    name: 'HR Portal',
+    vendor: 'Contoso',
+    product: 'hr-portal',
+    version: '3.0.0',
+    environment: 'production',
+    owner: 'HR IT',
+    criticality: 4,
+  });
+}
+
 async function handleVulnSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -110,6 +145,23 @@ async function handleVulnSubmit(event) {
   });
   form.reset();
   await refreshVulnerabilities();
+}
+
+function fillVulnerabilityDemo() {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  setFormValues(qs('#vulnForm'), {
+    cve_id: 'CVE-2024-44444',
+    title: 'Privilege escalation in HR Portal',
+    description: 'Уязвимость повышения привилегий в модуле управления пользователями.',
+    cvss_score: 7.8,
+    severity: 'high',
+    affected_vendor: 'Contoso',
+    affected_product: 'hr-portal',
+    fixed_version: '3.1.0',
+    published_at: now.toISOString().slice(0, 16),
+    exploit_available: true,
+  });
 }
 
 async function handleRemediationSubmit(event) {
@@ -166,6 +218,8 @@ async function main() {
   wireForm('#vulnForm', handleVulnSubmit);
   wireForm('#remediationForm', handleRemediationSubmit);
   wireForm('#assessmentForm', handleAssessmentSubmit);
+  qs('#fillAssetDemo').addEventListener('click', fillAssetDemo);
+  qs('#fillVulnDemo').addEventListener('click', fillVulnerabilityDemo);
 }
 
 main();

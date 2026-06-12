@@ -83,6 +83,9 @@ class InMemoryRemediationRepository:
         item = self._items.get(remediation_id)
         return deepcopy(item) if item is not None else None
 
+    async def list_all(self) -> Sequence[Remediation]:
+        return [deepcopy(item) for item in self._items.values()]
+
 
 class InMemoryHealthProbe:
     async def ping(self) -> bool:

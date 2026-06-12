@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from vuln_mgmt.core.config import load_settings
 from vuln_mgmt.core.container import (
@@ -15,9 +16,13 @@ from vuln_mgmt.core.logging import configure_logging
 from vuln_mgmt.core.telemetry import instrument_fastapi
 from vuln_mgmt.infrastructure.clients.nvd import NvdClientConfig
 from vuln_mgmt.routers.assets import router as assets_router
+from vuln_mgmt.routers.dashboard import router as dashboard_router
 from vuln_mgmt.routers.health import router as health_router
 from vuln_mgmt.routers.remediations import router as remediations_router
 from vuln_mgmt.routers.vulnerabilities import router as vulnerabilities_router
+from pathlib import Path
+
+UI_DIR = Path(__file__).resolve().parent / "ui"
 
 
 async def _build_default_container(settings: Any) -> AppContainer:
@@ -55,7 +60,9 @@ def create_app(settings: Any | None = None, container: AppContainer | None = Non
     app.state.settings = runtime_settings
     if container is not None:
         app.state.container = container
+    app.mount("/ui", StaticFiles(directory=UI_DIR), name="ui")
     app.include_router(health_router)
+    app.include_router(dashboard_router)
     app.include_router(assets_router)
     app.include_router(vulnerabilities_router)
     app.include_router(remediations_router)

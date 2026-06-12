@@ -13,6 +13,7 @@
         <p class="eyebrow">Vulnerability Management</p>
         <h1>Платформа управления уязвимостями</h1>
         <p class="lede">Инвентарь активов, уязвимости, статус исправления и риск-приоритизация в одном интерфейсе.</p>
+        <p class="hint">Демо-данные загружаются автоматически при старте. Можно сразу выбрать актив в блоке оценки риска или добавить свои записи через формы ниже.</p>
       </div>
       <div class="status-card">
         <div><span class="label">API</span><span id="healthStatus">проверка...</span></div>
@@ -24,10 +25,10 @@
       <article class="panel">
         <h2>Активы</h2>
         <form id="assetForm" class="form">
-          <input name="name" placeholder="Название" required>
-          <input name="vendor" placeholder="Вендор" required>
-          <input name="product" placeholder="Продукт" required>
-          <input name="version" placeholder="Версия" required>
+          <input name="name" list="assetNames" placeholder="Название" required>
+          <input name="vendor" list="vendors" placeholder="Вендор" required>
+          <input name="product" list="products" placeholder="Продукт" required>
+          <input name="version" list="versions" placeholder="Версия" required>
           <select name="environment">
             <option value="development">development</option>
             <option value="staging">staging</option>
@@ -35,6 +36,7 @@
           </select>
           <input name="owner" placeholder="Владелец" required>
           <input name="criticality" type="number" min="1" max="5" value="3">
+          <button type="button" class="secondary" id="fillAssetDemo">Заполнить пример</button>
           <button type="submit">Создать актив</button>
         </form>
         <div id="assetsList" class="list"></div>
@@ -43,8 +45,8 @@
       <article class="panel">
         <h2>Уязвимости</h2>
         <form id="vulnForm" class="form">
-          <input name="cve_id" placeholder="CVE-2024-11111" required>
-          <input name="title" placeholder="Название" required>
+          <input name="cve_id" list="cveIds" placeholder="CVE-2024-11111" required>
+          <input name="title" list="vulnerabilityTitles" placeholder="Название" required>
           <textarea name="description" placeholder="Описание" required></textarea>
           <input name="cvss_score" type="number" min="0" max="10" step="0.1" value="7.5">
           <select name="severity">
@@ -53,11 +55,12 @@
             <option value="high">high</option>
             <option value="critical">critical</option>
           </select>
-          <input name="affected_vendor" placeholder="Вендор" required>
-          <input name="affected_product" placeholder="Продукт" required>
-          <input name="fixed_version" placeholder="Исправленная версия">
+          <input name="affected_vendor" list="vendors" placeholder="Вендор" required>
+          <input name="affected_product" list="products" placeholder="Продукт" required>
+          <input name="fixed_version" list="versions" placeholder="Исправленная версия">
           <input name="published_at" type="datetime-local" required>
           <label class="inline"><input name="exploit_available" type="checkbox"> exploit available</label>
+          <button type="button" class="secondary" id="fillVulnDemo">Заполнить пример</button>
           <button type="submit">Создать уязвимость</button>
         </form>
         <div id="vulnerabilitiesList" class="list"></div>
@@ -66,15 +69,15 @@
       <article class="panel">
         <h2>Исправления</h2>
         <form id="remediationForm" class="form">
-          <input name="asset_id" placeholder="Asset ID" required>
-          <input name="vulnerability_id" placeholder="Vulnerability ID" required>
+          <select name="asset_id" id="remediationAssetSelect" required></select>
+          <select name="vulnerability_id" id="remediationVulnerabilitySelect" required></select>
           <select name="status">
             <option value="open">open</option>
             <option value="in_progress">in_progress</option>
             <option value="mitigated">mitigated</option>
             <option value="accepted">accepted</option>
           </select>
-          <input name="note" placeholder="Комментарий">
+          <input name="note" list="remediationNotes" placeholder="Комментарий">
           <button type="submit">Создать исправление</button>
         </form>
         <div id="remediationsList" class="list"></div>
@@ -83,12 +86,49 @@
       <article class="panel panel-wide">
         <h2>Оценка риска актива</h2>
         <form id="assessmentForm" class="form inline-form">
-          <input name="asset_id" placeholder="Asset ID" required>
+          <select name="asset_id" id="assessmentAssetSelect" required></select>
           <button type="submit">Показать риск</button>
         </form>
         <div id="assessmentResult" class="assessment"></div>
       </article>
     </section>
+
+    <datalist id="assetNames">
+      <option value="CRM Portal"></option>
+      <option value="Billing API"></option>
+      <option value="HR Portal"></option>
+    </datalist>
+    <datalist id="vendors">
+      <option value="Acme"></option>
+      <option value="LegacySoft"></option>
+      <option value="Contoso"></option>
+    </datalist>
+    <datalist id="products">
+      <option value="crm"></option>
+      <option value="billing-api"></option>
+      <option value="legacy-module"></option>
+    </datalist>
+    <datalist id="versions">
+      <option value="1.0.0"></option>
+      <option value="1.1.0"></option>
+      <option value="2.4.1"></option>
+      <option value="2.5.0"></option>
+    </datalist>
+    <datalist id="cveIds">
+      <option value="CVE-2024-11111"></option>
+      <option value="CVE-2024-22222"></option>
+      <option value="CVE-2024-33333"></option>
+    </datalist>
+    <datalist id="vulnerabilityTitles">
+      <option value="Remote code execution in CRM component"></option>
+      <option value="Authentication bypass in Billing API"></option>
+      <option value="Information disclosure in legacy module"></option>
+    </datalist>
+    <datalist id="remediationNotes">
+      <option value="Патч запланирован к установке"></option>
+      <option value="Компенсирующие меры применены"></option>
+      <option value="Риск принят владельцем сервиса"></option>
+    </datalist>
   </main>
   <script src="/ui/app.js"></script>
 </body>

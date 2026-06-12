@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Платформа управления уязвимостями</title>
+  <link rel="stylesheet" href="/ui/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Vulnerability Management</p>
+        <h1>Платформа управления уязвимостями</h1>
+        <p class="lede">Инвентарь активов, уязвимости, статус исправления и риск-приоритизация в одном интерфейсе.</p>
+      </div>
+      <div class="status-card">
+        <div><span class="label">API</span><span id="healthStatus">проверка...</span></div>
+        <div><span class="label">Ready</span><span id="readyStatus">проверка...</span></div>
+      </div>
+    </header>
+
+    <section class="grid">
+      <article class="panel">
+        <h2>Активы</h2>
+        <form id="assetForm" class="form">
+          <input name="name" placeholder="Название" required>
+          <input name="vendor" placeholder="Вендор" required>
+          <input name="product" placeholder="Продукт" required>
+          <input name="version" placeholder="Версия" required>
+          <select name="environment">
+            <option value="development">development</option>
+            <option value="staging">staging</option>
+            <option value="production">production</option>
+          </select>
+          <input name="owner" placeholder="Владелец" required>
+          <input name="criticality" type="number" min="1" max="5" value="3">
+          <button type="submit">Создать актив</button>
+        </form>
+        <div id="assetsList" class="list"></div>
+      </article>
+
+      <article class="panel">
+        <h2>Уязвимости</h2>
+        <form id="vulnForm" class="form">
+          <input name="cve_id" placeholder="CVE-2024-11111" required>
+          <input name="title" placeholder="Название" required>
+          <textarea name="description" placeholder="Описание" required></textarea>
+          <input name="cvss_score" type="number" min="0" max="10" step="0.1" value="7.5">
+          <select name="severity">
+            <option value="low">low</option>
+            <option value="medium">medium</option>
+            <option value="high">high</option>
+            <option value="critical">critical</option>
+          </select>
+          <input name="affected_vendor" placeholder="Вендор" required>
+          <input name="affected_product" placeholder="Продукт" required>
+          <input name="fixed_version" placeholder="Исправленная версия">
+          <input name="published_at" type="datetime-local" required>
+          <label class="inline"><input name="exploit_available" type="checkbox"> exploit available</label>
+          <button type="submit">Создать уязвимость</button>
+        </form>
+        <div id="vulnerabilitiesList" class="list"></div>
+      </article>
+
+      <article class="panel">
+        <h2>Исправления</h2>
+        <form id="remediationForm" class="form">
+          <input name="asset_id" placeholder="Asset ID" required>
+          <input name="vulnerability_id" placeholder="Vulnerability ID" required>
+          <select name="status">
+            <option value="open">open</option>
+            <option value="in_progress">in_progress</option>
+            <option value="mitigated">mitigated</option>
+            <option value="accepted">accepted</option>
+          </select>
+          <input name="note" placeholder="Комментарий">
+          <button type="submit">Создать исправление</button>
+        </form>
+        <div id="remediationsList" class="list"></div>
+      </article>
+
+      <article class="panel panel-wide">
+        <h2>Оценка риска актива</h2>
+        <form id="assessmentForm" class="form inline-form">
+          <input name="asset_id" placeholder="Asset ID" required>
+          <button type="submit">Показать риск</button>
+        </form>
+        <div id="assessmentResult" class="assessment"></div>
+      </article>
+    </section>
+  </main>
+  <script src="/ui/app.js"></script>
+</body>
+</html>
